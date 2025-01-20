@@ -4,6 +4,10 @@ A cross-platform battery management solution designed to monitor laptop battery 
 
 ![Battery Status](https://img.shields.io/badge/Battery-Protected-green)
 ![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-yellow)
+![C++](https://img.shields.io/badge/C%2B%2B-11%2B-blue)
+![C](https://img.shields.io/badge/C-99%2B-orange)
+![Rust](https://img.shields.io/badge/Rust-1.0%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## 🔋 Features
