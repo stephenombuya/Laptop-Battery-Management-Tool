@@ -1,1 +1,13 @@
-
+{
+  "name": "battery-manager-desktop",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "webpack --config webpack.config.js"
+  },
+  "dependencies": {
+    "electron": "^latest",
+    "chart.js": "^latest"
+  }
+}
