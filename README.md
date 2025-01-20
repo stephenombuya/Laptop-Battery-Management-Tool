@@ -106,11 +106,22 @@ cd laptop-battery-manager
 
 2. Install required packages:
 ```bash
-# For Windows
-pip install psutil win10toast
+# Core Python service
+cd core-service
+pip install -r requirements.txt
 
-# For Linux/macOS
-pip install psutil
+# Native modules
+cd ../native-modules
+cmake .
+make
+
+# Electron app
+cd ../desktop-app
+npm install
+
+# Rust service
+cd ../system-service
+cargo build
 ```
 
 ## 🚀 Usage
