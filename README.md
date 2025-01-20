@@ -84,6 +84,16 @@ manager = BatteryManager(max_charge_limit=80, min_charge_limit=20)
 manager.run()
 ```
 
+---
+
+## System Architecture
+
+<ANTARTIFACTLINK identifier="system-architecture" type="text/markdown" title="system-architecture.md" isClosed="true" />
+
+For the detailed system architecture, see [System Architecture](https://github.com/stephenombuya/Laptop-Battery-Management-Tool/blob/main/system-architecture.md)
+
+---
+
 ## ⚙️ Configuration
 
 Customize the tool with these parameters:
