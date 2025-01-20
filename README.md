@@ -43,6 +43,48 @@ A cross-platform battery management solution designed to monitor laptop battery 
 - Node.js backend for system interaction
 - Cross-platform desktop application
 
+---
+
+## **Project Structure**
+
+Here is the overview of how the files are arranged in the repository:
+```
+src/
+├── core-service/              # Python core service
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   ├── core.py
+│   │   └── utils.py
+│   │   ├── gui.py
+│   └── requirements.txt
+│
+├── native-modules/           # C/C++ hardware interface
+│   ├── windows/
+│   │   ├── battery_control.cpp
+│   │   └── battery_control.h
+│   ├── linux/
+│   │   ├── battery_control.cpp
+│   │   └── battery_control.h
+│   └── CMakeLists.txt
+│
+├── desktop-app/             # Electron frontend
+│   ├── src/
+│   │   ├── index.html
+│   │   ├── main.js
+│   │   └── renderer.js
+│   ├── package.json
+│   └── webpack.config.js
+│
+├── system-service/          # Rust background service
+│   ├── src/
+│   │   ├── main.rs
+│   │   └── battery.rs
+│   └── Cargo.toml
+│
+└── README.md
+
+```
+
 ## 📋 Prerequisites
 
 - Python 3.6 or higher
