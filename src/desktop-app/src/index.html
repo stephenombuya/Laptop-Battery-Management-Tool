@@ -1,1 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BatteryOS — Intelligent Power Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0e1318;
+    --surface2: #141b22;
+    --surface3: #1b2530;
+    --border: rgba(255,255,255,0.06);
+    --border-active: rgba(80,220,140,0.35);
+    --accent: #3dffa0;
+    --accent2: #00c8ff;
+    --accent3: #ff6b35;
+    --warn: #ffbe3d;
+    --danger: #ff4d6a;
+    --text: #e8f0f7;
+    --text2: #7a9ab5;
+    --text3: #3d5a70;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --r: 14px;
+    --r-sm: 8px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+    --glow: 0 0 24px rgba(61,255,160,0.15);
+  }
 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(61,255,160,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61,255,160,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(61,255,160,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* ─── HEADER ─────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px rgba(61,255,160,0.3);
+  }
+
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(61,255,160,0.08);
+    border: 1px solid var(--border-active);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .header-time {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  /* ─── LAYOUT GRID ─────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 24px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    border-color: rgba(255,255,255,0.1);
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── BATTERY VISUAL ──────────────────────── */
+  .battery-card {
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .battery-visual {
+    position: relative;
+    margin: 16px auto 28px;
+    width: 160px;
+  }
+
+  .battery-body {
+    width: 160px;
+    height: 300px;
+    border: 3px solid rgba(255,255,255,0.12);
+    border-radius: 22px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .battery-tip {
+    width: 48px;
+    height: 12px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px 4px 0 0;
+    margin: 0 auto -3px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .battery-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, var(--accent) 0%, rgba(61,255,160,0.7) 100%);
+    border-radius: 0 0 19px 19px;
+    transition: height 0.8s cubic-bezier(0.4,0,0.2,1), background 0.4s;
+    box-shadow: 0 -8px 30px rgba(61,255,160,0.4);
+  }
+
+  .battery-fill.warn {
+    background: linear-gradient(180deg, var(--warn), rgba(255,190,61,0.7));
+    box-shadow: 0 -8px 30px rgba(255,190,61,0.4);
+  }
+
+  .battery-fill.danger {
+    background: linear-gradient(180deg, var(--danger), rgba(255,77,106,0.7));
+    box-shadow: 0 -8px 30px rgba(255,77,106,0.4);
+  }
+
+  .battery-segments {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 0;
+    pointer-events: none;
+  }
+
+  .battery-segment-line {
+    width: 100%;
+    height: 1px;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .battery-pct {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 2;
+  }
+
+  .battery-pct-num {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    line-height: 1;
+  }
+
+  .battery-pct-sym {
+    font-family: var(--mono);
+    font-size: 18px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .battery-status-text {
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .battery-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.accent2 { color: var(--accent2); }
+
+  /* ─── THRESHOLD CONTROLS ──────────────────── */
+  .threshold-section {
+    margin-top: 20px;
+  }
+
+  .threshold-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .threshold-label {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text2);
+    width: 48px;
+    flex-shrink: 0;
+  }
+
+  .threshold-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 100px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .threshold-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--accent);
+    transition: width 0.2s;
+  }
+
+  .threshold-fill.min-fill {
+    background: var(--accent3);
+  }
+
+  input[type="range"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    margin: 0;
+  }
+
+  .threshold-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px rgba(61,255,160,0.5);
+    pointer-events: none;
+    transition: left 0.2s;
+  }
+
+  .threshold-thumb.min-thumb {
+    background: var(--accent3);
+    box-shadow: 0 0 8px rgba(255,107,53,0.5);
+  }
+
+  .threshold-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ─── CHARGE HISTORY CHART ────────────────── */
+  .chart-card {
+    min-height: 220px;
+    position: relative;
+  }
+
+  .chart-area {
+    width: 100%;
+    height: 160px;
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .chart-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .chart-area-fill {
+    fill: url(#chartGrad);
+    opacity: 0.4;
+  }
+
+  .chart-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .chart-dot {
+    fill: var(--accent);
+    filter: drop-shadow(0 0 4px rgba(61,255,160,0.6));
+  }
+
+  .chart-grid-line {
+    stroke: rgba(255,255,255,0.04);
+    stroke-width: 1;
+  }
+
+  .chart-label {
+    fill: var(--text3);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+  }
+
+  .chart-threshold-line {
+    stroke: var(--accent);
+    stroke-width: 1;
+    stroke-dasharray: 4,4;
+    opacity: 0.4;
+  }
+
+  .chart-threshold-line.min {
+    stroke: var(--accent3);
+  }
+
+  /* ─── SYSTEM INFO ─────────────────────────── */
+  .sysinfo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .sysinfo-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 14px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .sysinfo-box:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-2px);
+  }
+
+  .sysinfo-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .sysinfo-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+
+  .sysinfo-val {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ─── EVENTS LOG ──────────────────────────── */
+  .log-card {
+    grid-column: 1 / -1;
+  }
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .log-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .log-filter-btn {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .log-filter-btn.active {
+    background: rgba(61,255,160,0.1);
+    border-color: var(--border-active);
+    color: var(--accent);
+  }
+
+  .log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface3) transparent;
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .log-entry:hover { border-color: rgba(255,255,255,0.1); }
+
+  .log-entry.info .log-badge { color: var(--accent2); }
+  .log-entry.warn .log-badge { color: var(--warn); }
+  .log-entry.danger .log-badge { color: var(--danger); }
+  .log-entry.success .log-badge { color: var(--accent); }
+
+  .log-badge {
+    font-size: 11px;
+    font-family: var(--mono);
+    width: 52px;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+
+  .log-time {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    white-space: nowrap;
+    flex-shrink: 0;
+    width: 72px;
+  }
+
+  .log-msg {
+    font-size: 13px;
+    color: var(--text2);
+    flex: 1;
+  }
+
+  /* ─── CONTROLS ROW ─────────────────────────── */
+  .controls-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: var(--r-sm);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #08100d;
+    box-shadow: 0 4px 16px rgba(61,255,160,0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(61,255,160,0.35);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.15);
+    background: var(--surface3);
+  }
+
+  .btn-danger {
+    background: rgba(255,77,106,0.12);
+    color: var(--danger);
+    border: 1px solid rgba(255,77,106,0.2);
+  }
+
+  .btn-danger:hover {
+    background: rgba(255,77,106,0.2);
+  }
+
+  /* ─── PLATFORM SELECTOR ───────────────────── */
+  .platform-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .platform-btn {
+    flex: 1;
+    padding: 10px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .platform-btn:hover { border-color: rgba(255,255,255,0.1); }
+
+  .platform-btn.active {
+    background: rgba(61,255,160,0.08);
+    border-color: var(--border-active);
+    color: var(--accent);
+  }
+
+  .platform-icon { font-size: 18px; }
+
+  /* ─── CHARGING MODE TOGGLE ─────────────────── */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .mode-card {
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .mode-card:hover { border-color: rgba(255,255,255,0.1); }
+
+  .mode-card.active {
+    background: rgba(61,255,160,0.07);
+    border-color: var(--border-active);
+  }
+
+  .mode-icon { font-size: 22px; margin-bottom: 6px; }
+
+  .mode-name {
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .mode-desc {
+    font-size: 10px;
+    color: var(--text3);
+    line-height: 1.4;
+  }
+
+  .mode-card.active .mode-name { color: var(--accent); }
+
+  /* ─── TOGGLE SWITCH ────────────────────────── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toggle-row:last-child { border-bottom: none; }
+
+  .toggle-info { flex: 1; }
+
+  .toggle-name {
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .toggle-detail {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    margin-left: 16px;
+  }
+
+  .toggle input { opacity: 0; width: 0; height: 0; }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--surface3);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid var(--border);
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text3);
+    top: 2px;
+    left: 2px;
+    transition: all 0.2s;
+  }
+
+  .toggle input:checked + .toggle-slider {
+    background: rgba(61,255,160,0.2);
+    border-color: var(--border-active);
+  }
+
+  .toggle input:checked + .toggle-slider::before {
+    background: var(--accent);
+    transform: translateX(18px);
+    box-shadow: 0 0 6px rgba(61,255,160,0.5);
+  }
+
+  /* ─── BOTTOM ROW ────────────────────────────── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  /* ─── NOTIFICATIONS PANEL ─────────────────── */
+  .notif-entry {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .notif-entry:last-child { border-bottom: none; }
+
+  .notif-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--surface2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .notif-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .notif-desc {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
+
+  /* Charging animation overlay */
+  .charging-bolt {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .bolt-icon {
+    font-size: 56px;
+    opacity: 0;
+    filter: drop-shadow(0 0 20px var(--accent));
+    animation: boltPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes boltPulse {
+    0%, 70%, 100% { opacity: 0; transform: scale(0.8); }
+    35% { opacity: 0.35; transform: scale(1); }
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .tag-green { color: var(--accent); border-color: rgba(61,255,160,0.25); background: rgba(61,255,160,0.08); }
+  .tag-orange { color: var(--accent3); border-color: rgba(255,107,53,0.25); background: rgba(255,107,53,0.08); }
+  .tag-blue { color: var(--accent2); border-color: rgba(0,200,255,0.25); background: rgba(0,200,255,0.08); }
+  .tag-warn { color: var(--warn); border-color: rgba(255,190,61,0.25); background: rgba(255,190,61,0.08); }
+
+  /* Animation for new log entries */
+  .new-entry { animation: slideIn 0.3s ease; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔋</div>
+      <div>
+        <div class="logo-text">Battery<span>OS</span></div>
+        <div class="logo-sub">Power Management v2.0</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        <span id="statusLabel">MONITORING ACTIVE</span>
+      </div>
+      <div class="header-time" id="clockDisplay">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <div class="grid">
+
+    <!-- BATTERY VISUAL CARD -->
+    <div class="card battery-card">
+      <div class="card-label">Battery Status</div>
+
+      <div class="battery-visual">
+        <div class="battery-tip"></div>
+        <div class="battery-body">
+          <div class="battery-fill" id="batteryFill"></div>
+          <div class="battery-segments">
+            <div class="battery-segment-line"></div>
+            <div class="battery-segment-line"></div>
+            <div class="battery-segment-line"></div>
+          </div>
+          <div class="battery-pct">
+            <div class="battery-pct-num" id="pctNum">74</div>
+            <div class="battery-pct-sym">%</div>
+            <div class="battery-status-text" id="chargeStatus">DISCHARGING</div>
+          </div>
+          <div class="charging-bolt">
+            <div class="bolt-icon" id="boltIcon">⚡</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="battery-stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Time Left</div>
+          <div class="stat-value accent" id="timeLeft">2h 34m</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Power Draw</div>
+          <div class="stat-value accent2" id="powerDraw">18.4W</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Temp</div>
+          <div class="stat-value" id="tempVal">38°C</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Health</div>
+          <div class="stat-value accent" id="healthVal">94%</div>
+        </div>
+      </div>
+
+      <!-- THRESHOLDS -->
+      <div class="threshold-section">
+        <div class="card-label" style="margin-top:16px;">Charge Limits</div>
+
+        <div class="threshold-row">
+          <div class="threshold-label">MAX</div>
+          <div class="threshold-track" id="maxTrack">
+            <div class="threshold-fill" id="maxFill"></div>
+            <div class="threshold-thumb" id="maxThumb"></div>
+            <input type="range" id="maxSlider" min="50" max="100" value="80">
+          </div>
+          <div class="threshold-val" id="maxVal">80%</div>
+        </div>
+
+        <div class="threshold-row">
+          <div class="threshold-label">MIN</div>
+          <div class="threshold-track" id="minTrack">
+            <div class="threshold-fill min-fill" id="minFill"></div>
+            <div class="threshold-thumb min-thumb" id="minThumb"></div>
+            <input type="range" id="minSlider" min="0" max="50" value="20">
+          </div>
+          <div class="threshold-val" id="minVal">20%</div>
+        </div>
+      </div>
+
+      <!-- CHARGING MODES -->
+      <div class="card-label" style="margin-top:20px;">Charging Mode</div>
+      <div class="mode-grid">
+        <div class="mode-card active" onclick="setMode(this,'balanced')">
+          <div class="mode-icon">⚖️</div>
+          <div class="mode-name">Balanced</div>
+          <div class="mode-desc">80% max, extends battery life</div>
+        </div>
+        <div class="mode-card" onclick="setMode(this,'travel')">
+          <div class="mode-icon">✈️</div>
+          <div class="mode-name">Travel</div>
+          <div class="mode-desc">100% max for long trips</div>
+        </div>
+        <div class="mode-card" onclick="setMode(this,'storage')">
+          <div class="mode-icon">📦</div>
+          <div class="mode-name">Storage</div>
+          <div class="mode-desc">Hold at 50% for storage</div>
+        </div>
+        <div class="mode-card" onclick="setMode(this,'custom')">
+          <div class="mode-icon">🔧</div>
+          <div class="mode-name">Custom</div>
+          <div class="mode-desc">Your manual thresholds</div>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <button class="btn btn-primary" onclick="toggleCharging()">⚡ <span id="chargeBtn">Stop Charging</span></button>
+        <button class="btn btn-secondary" onclick="forceRefresh()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- CHARGE HISTORY CHART -->
+    <div class="card chart-card">
+      <div class="log-header">
+        <div class="card-label" style="margin-bottom:0;">Charge History</div>
+        <div style="display:flex;gap:8px;">
+          <span class="tag tag-green">▲ 2.1%/hr avg gain</span>
+          <span class="tag tag-orange">▼ 6.8%/hr avg drain</span>
+        </div>
+      </div>
+      <div class="chart-area">
+        <svg class="chart-svg" id="chartSvg" viewBox="0 0 700 160" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3dffa0" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#3dffa0" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid lines -->
+          <line x1="0" y1="40" x2="700" y2="40" class="chart-grid-line"/>
+          <line x1="0" y1="80" x2="700" y2="80" class="chart-grid-line"/>
+          <line x1="0" y1="120" x2="700" y2="120" class="chart-grid-line"/>
+          <!-- Labels -->
+          <text x="2" y="38" class="chart-label">100%</text>
+          <text x="2" y="78" class="chart-label">60%</text>
+          <text x="2" y="118" class="chart-label">20%</text>
+          <!-- Threshold lines -->
+          <line x1="0" y1="32" x2="700" y2="32" class="chart-threshold-line" id="maxLine"/>
+          <line x1="0" y1="128" x2="700" y2="128" class="chart-threshold-line min" id="minLine"/>
+          <!-- Chart path filled -->
+          <path id="chartAreaPath" class="chart-area-fill"/>
+          <!-- Chart line -->
+          <path id="chartLinePath" class="chart-line"/>
+          <!-- Time labels -->
+          <text x="30" y="156" class="chart-label" id="tl0">-6h</text>
+          <text x="145" y="156" class="chart-label" id="tl1">-5h</text>
+          <text x="260" y="156" class="chart-label" id="tl2">-4h</text>
+          <text x="375" y="156" class="chart-label" id="tl3">-3h</text>
+          <text x="490" y="156" class="chart-label" id="tl4">-2h</text>
+          <text x="600" y="156" class="chart-label" id="tl5">Now</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- SYSTEM INFO -->
+    <div class="card">
+      <div class="card-label">System Info</div>
+      <div class="sysinfo-grid">
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">💻</div>
+          <div class="sysinfo-title">Platform</div>
+          <div class="sysinfo-val" id="platformVal">macOS</div>
+        </div>
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">🔋</div>
+          <div class="sysinfo-title">Cycles</div>
+          <div class="sysinfo-val" id="cyclesVal">312</div>
+        </div>
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">⚡</div>
+          <div class="sysinfo-title">Voltage</div>
+          <div class="sysinfo-val" id="voltageVal">12.1V</div>
+        </div>
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">📊</div>
+          <div class="sysinfo-title">Design Cap</div>
+          <div class="sysinfo-val">5200 mAh</div>
+        </div>
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">🔌</div>
+          <div class="sysinfo-title">Adapter</div>
+          <div class="sysinfo-val" id="adapterVal">65W USB-C</div>
+        </div>
+        <div class="sysinfo-box">
+          <div class="sysinfo-icon">🌡️</div>
+          <div class="sysinfo-title">Throttling</div>
+          <div class="sysinfo-val tag tag-green" style="display:inline-flex;" id="throttleVal">None</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+
+    <!-- SETTINGS TOGGLES -->
+    <div class="card">
+      <div class="card-label">Smart Features</div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">Auto Charge Limiting</div>
+          <div class="toggle-detail">Stop at max threshold</div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked id="tog1"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">Desktop Notifications</div>
+          <div class="toggle-detail">Alerts on events</div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked id="tog2"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">IoT Smart Plug Control</div>
+          <div class="toggle-detail">Physical power cutoff</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog3"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">Background Service</div>
+          <div class="toggle-detail">Run as system daemon</div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked id="tog4"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-name">Adaptive Thresholds</div>
+          <div class="toggle-detail">Learns usage patterns</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="tog5"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- PLATFORM -->
+    <div class="card">
+      <div class="card-label">Platform</div>
+      <div class="platform-row">
+        <div class="platform-btn active" onclick="setPlatform(this,'macOS','IOKit integration','65W USB-C')">
+          <div class="platform-icon">🍎</div>
+          <span>macOS</span>
+        </div>
+        <div class="platform-btn" onclick="setPlatform(this,'Windows','WinAPI integration','65W USB-C')">
+          <div class="platform-icon">🪟</div>
+          <span>Windows</span>
+        </div>
+        <div class="platform-btn" onclick="setPlatform(this,'Linux','ACPI / sysfs','65W USB-C')">
+          <div class="platform-icon">🐧</div>
+          <span>Linux</span>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="card-label">Check Interval</div>
+        <div class="threshold-row" style="margin-bottom:0;">
+          <div class="threshold-label">Freq</div>
+          <div class="threshold-track">
+            <div class="threshold-fill" id="intervalFill" style="width:60%"></div>
+            <div class="threshold-thumb" id="intervalThumb" style="left:60%"></div>
+            <input type="range" id="intervalSlider" min="30" max="600" value="300" oninput="updateInterval(this.value)">
+          </div>
+          <div class="threshold-val" id="intervalVal">300s</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="card-label">Quick Commands</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-secondary" style="justify-content:flex-start;" onclick="logEvent('info','Diagnostic scan started — checking all battery parameters...')">🔍 Run Diagnostics</button>
+          <button class="btn btn-secondary" style="justify-content:flex-start;" onclick="exportLog()">📄 Export Log (JSON)</button>
+          <button class="btn btn-danger" style="justify-content:flex-start;" onclick="clearLog()">🗑 Clear All Logs</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS PREVIEW -->
+    <div class="card">
+      <div class="card-label">Recent Alerts</div>
+      <div id="notifList">
+        <div class="notif-entry">
+          <div class="notif-icon">⚡</div>
+          <div>
+            <div class="notif-title">Charging stopped at 80%</div>
+            <div class="notif-desc">Today, 09:42 · Auto limit enforced</div>
+          </div>
+        </div>
+        <div class="notif-entry">
+          <div class="notif-icon">🔋</div>
+          <div>
+            <div class="notif-title">Battery below 25%</div>
+            <div class="notif-desc">Today, 07:15 · Plugged in manually</div>
+          </div>
+        </div>
+        <div class="notif-entry">
+          <div class="notif-icon">🌡️</div>
+          <div>
+            <div class="notif-title">Temperature spike: 52°C</div>
+            <div class="notif-desc">Yesterday, 15:30 · Cooled down normally</div>
+          </div>
+        </div>
+        <div class="notif-entry">
+          <div class="notif-icon">✅</div>
+          <div>
+            <div class="notif-title">System service started</div>
+            <div class="notif-desc">Yesterday, 08:00 · v2.0 daemon running</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EVENTS LOG -->
+  <div class="card log-card" style="margin-top:20px;">
+    <div class="log-header">
+      <div class="card-label" style="margin-bottom:0;">Event Log</div>
+      <div class="log-controls">
+        <button class="log-filter-btn active" onclick="filterLog(this,'all')">All</button>
+        <button class="log-filter-btn" onclick="filterLog(this,'info')">Info</button>
+        <button class="log-filter-btn" onclick="filterLog(this,'warn')">Warn</button>
+        <button class="log-filter-btn" onclick="filterLog(this,'danger')">Error</button>
+        <button class="log-filter-btn" onclick="filterLog(this,'success')">OK</button>
+      </div>
+    </div>
+    <div class="log-list" id="logList"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  pct: 74,
+  charging: true,
+  platform: 'macOS',
+  maxLimit: 80,
+  minLimit: 20,
+  checkInterval: 300,
+  mode: 'balanced',
+  currentFilter: 'all',
+  logs: [],
+  history: [],
+  temp: 38,
+  health: 94,
+  cycles: 312
+};
+
+// ─── SEED DATA ───────────────────────────────────────────────────────────────
+const seedLogs = [
+  { type: 'success', msg: 'BatteryOS service started — monitoring active', time: ago(18) },
+  { type: 'info',   msg: 'Platform detected: macOS — IOKit integration loaded', time: ago(17) },
+  { type: 'info',   msg: 'Charging thresholds set: 20% – 80%', time: ago(16) },
+  { type: 'warn',   msg: 'Battery level reached minimum threshold (20%)', time: ago(10) },
+  { type: 'info',   msg: 'Charging started — AC adapter connected (65W USB-C)', time: ago(9) },
+  { type: 'success', msg: 'Battery reached 80% — charging halted automatically', time: ago(3) },
+  { type: 'info',   msg: 'System check — all parameters nominal', time: ago(1) },
+];
+
+function ago(mins) {
+  const d = new Date(Date.now() - mins * 60000);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// Seed history data (last 7 hours of battery %)
+const seedHistory = [22, 20, 45, 68, 74, 80, 80, 78, 74, 72, 70, 74];
+state.history = seedHistory;
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+seedLogs.forEach(l => state.logs.push(l));
+
+function init() {
+  updateBatteryVisual();
+  updateSliders();
+  renderLog();
+  renderChart();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(simulateTick, 5000);
+}
+
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clockDisplay').textContent =
+    new Date().toLocaleTimeString('en-GB');
+}
+
+// ─── BATTERY VISUAL ───────────────────────────────────────────────────────────
+function updateBatteryVisual() {
+  const pct = state.pct;
+  const fill = document.getElementById('batteryFill');
+  const num = document.getElementById('pctNum');
+  const status = document.getElementById('chargeStatus');
+  const timeLeft = document.getElementById('timeLeft');
+  const powerDraw = document.getElementById('powerDraw');
+  const tempEl = document.getElementById('tempVal');
+  const healthEl = document.getElementById('healthVal');
+  const bolt = document.getElementById('boltIcon');
+
+  fill.style.height = pct + '%';
+  num.textContent = pct;
+
+  fill.className = 'battery-fill';
+  if (pct <= 20) fill.classList.add('danger');
+  else if (pct <= 40) fill.classList.add('warn');
+
+  if (state.charging) {
+    status.textContent = 'CHARGING';
+    bolt.style.opacity = '0.4';
+    timeLeft.textContent = Math.round((state.maxLimit - pct) / 18 * 60) + 'm to ' + state.maxLimit + '%';
+    powerDraw.textContent = '+' + (Math.random() * 4 + 20).toFixed(1) + 'W';
+  } else {
+    status.textContent = 'DISCHARGING';
+    bolt.style.opacity = '0';
+    const hoursLeft = pct / 6.8;
+    const h = Math.floor(hoursLeft);
+    const m = Math.floor((hoursLeft - h) * 60);
+    timeLeft.textContent = h + 'h ' + m + 'm';
+    powerDraw.textContent = (Math.random() * 5 + 16).toFixed(1) + 'W';
+  }
+
+  tempEl.textContent = state.temp + '°C';
+  document.getElementById('healthVal').textContent = state.health + '%';
+
+  document.getElementById('chargeBtn').textContent = state.charging ? 'Stop Charging' : 'Start Charging';
+  document.getElementById('statusLabel').textContent = state.charging ? 'CHARGING' : 'MONITORING ACTIVE';
+}
+
+// ─── SLIDERS ──────────────────────────────────────────────────────────────────
+function updateSliders() {
+  // Max
+  const maxPct = ((state.maxLimit - 50) / 50) * 100;
+  document.getElementById('maxFill').style.width = maxPct + '%';
+  document.getElementById('maxThumb').style.left = maxPct + '%';
+  document.getElementById('maxVal').textContent = state.maxLimit + '%';
+  document.getElementById('maxSlider').value = state.maxLimit;
+
+  // Min
+  const minPct = (state.minLimit / 50) * 100;
+  document.getElementById('minFill').style.width = minPct + '%';
+  document.getElementById('minThumb').style.left = minPct + '%';
+  document.getElementById('minVal').textContent = state.minLimit + '%';
+  document.getElementById('minSlider').value = state.minLimit;
+
+  renderChart(); // Update threshold lines
+}
+
+document.getElementById('maxSlider').addEventListener('input', function() {
+  state.maxLimit = parseInt(this.value);
+  updateSliders();
+  logEvent('info', 'Max charge limit changed to ' + state.maxLimit + '%');
+});
+
+document.getElementById('minSlider').addEventListener('input', function() {
+  state.minLimit = parseInt(this.value);
+  updateSliders();
+  logEvent('info', 'Min charge limit changed to ' + state.minLimit + '%');
+});
+
+// ─── CHART ────────────────────────────────────────────────────────────────────
+function renderChart() {
+  const data = state.history;
+  const W = 700, H = 150;
+  const pad = { l: 36, r: 10, t: 8, b: 16 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  const xScale = i => pad.l + (i / (data.length - 1)) * cW;
+  const yScale = v => pad.t + cH - (v / 100) * cH;
+
+  const pts = data.map((v, i) => [xScale(i), yScale(v)]);
+
+  // Build smooth path
+  function catmullRom(pts) {
+    if (pts.length < 2) return '';
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+    }
+    return d;
+  }
+
+  const linePath = catmullRom(pts);
+  const lastPt = pts[pts.length - 1];
+  const firstPt = pts[0];
+  const areaPath = linePath + ` L ${lastPt[0]} ${H} L ${firstPt[0]} ${H} Z`;
+
+  document.getElementById('chartLinePath').setAttribute('d', linePath);
+  document.getElementById('chartAreaPath').setAttribute('d', areaPath);
+
+  // Threshold lines
+  document.getElementById('maxLine').setAttribute('y1', yScale(state.maxLimit));
+  document.getElementById('maxLine').setAttribute('y2', yScale(state.maxLimit));
+  document.getElementById('minLine').setAttribute('y1', yScale(state.minLimit));
+  document.getElementById('minLine').setAttribute('y2', yScale(state.minLimit));
+}
+
+// ─── LOG ─────────────────────────────────────────────────────────────────────
+function logEvent(type, msg) {
+  const time = new Date().toLocaleTimeString('en-GB');
+  state.logs.unshift({ type, msg, time });
+  if (state.logs.length > 80) state.logs.pop();
+  renderLog();
+
+  // Also add to notifications if important
+  if (type === 'warn' || type === 'danger' || type === 'success') {
+    addNotif(type, msg, time);
+  }
+}
+
+function addNotif(type, msg, time) {
+  const icons = { warn: '⚠️', danger: '🚨', success: '✅', info: 'ℹ️' };
+  const list = document.getElementById('notifList');
+  const el = document.createElement('div');
+  el.className = 'notif-entry';
+  el.innerHTML = `<div class="notif-icon">${icons[type]||'🔔'}</div><div><div class="notif-title">${msg}</div><div class="notif-desc">Just now · ${time}</div></div>`;
+  list.insertBefore(el, list.firstChild);
+  while (list.children.length > 5) list.removeChild(list.lastChild);
+}
+
+function renderLog() {
+  const list = document.getElementById('logList');
+  const filter = state.currentFilter;
+  const filtered = filter === 'all' ? state.logs : state.logs.filter(l => l.type === filter);
+
+  const badges = { info: 'INFO', warn: 'WARN', danger: 'ERROR', success: 'OK' };
+
+  list.innerHTML = filtered.map(l => `
+    <div class="log-entry ${l.type}">
+      <div class="log-badge">${badges[l.type] || 'LOG'}</div>
+      <div class="log-time">${l.time}</div>
+      <div class="log-msg">${l.msg}</div>
+    </div>
+  `).join('');
+}
+
+function filterLog(btn, type) {
+  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.currentFilter = type;
+  renderLog();
+}
+
+function clearLog() {
+  state.logs = [];
+  renderLog();
+  logEvent('info', 'Log cleared by user');
+}
+
+function exportLog() {
+  const data = JSON.stringify({ exported: new Date().toISOString(), platform: state.platform, events: state.logs }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'battery_log_' + Date.now() + '.json';
+  a.click();
+  logEvent('success', 'Log exported to JSON file');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+function toggleCharging() {
+  state.charging = !state.charging;
+  logEvent(state.charging ? 'success' : 'warn',
+    state.charging ? 'Charging started manually by user' : 'Charging stopped manually by user');
+  updateBatteryVisual();
+}
+
+function forceRefresh() {
+  updateBatteryVisual();
+  renderChart();
+  logEvent('info', 'Manual refresh triggered — all data updated');
+}
+
+function setMode(el, mode) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.mode = mode;
+
+  const configs = {
+    balanced: { max: 80, min: 20 },
+    travel:   { max: 100, min: 20 },
+    storage:  { max: 55, min: 45 },
+    custom:   { max: state.maxLimit, min: state.minLimit }
+  };
+
+  if (mode !== 'custom') {
+    state.maxLimit = configs[mode].max;
+    state.minLimit = configs[mode].min;
+    updateSliders();
+    logEvent('info', `Charging mode set to "${mode}" — limits: ${state.minLimit}%–${state.maxLimit}%`);
+  }
+}
+
+function setPlatform(el, name, detail, adapter) {
+  document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  state.platform = name;
+  document.getElementById('platformVal').textContent = name;
+  document.getElementById('adapterVal').textContent = adapter;
+  logEvent('info', `Platform switched to ${name} — ${detail}`);
+}
+
+function updateInterval(val) {
+  state.checkInterval = parseInt(val);
+  document.getElementById('intervalVal').textContent = val + 's';
+  const pct = ((val - 30) / 570) * 100;
+  document.getElementById('intervalFill').style.width = pct + '%';
+  document.getElementById('intervalThumb').style.left = pct + '%';
+}
+
+// ─── SIMULATION ───────────────────────────────────────────────────────────────
+let tickCount = 0;
+function simulateTick() {
+  tickCount++;
+  if (state.charging) {
+    state.pct = Math.min(state.maxLimit, state.pct + Math.floor(Math.random() * 2 + 1));
+    if (state.pct >= state.maxLimit) {
+      state.charging = false;
+      logEvent('success', `Charging complete — battery reached ${state.maxLimit}% limit`);
+    }
+  } else {
+    state.pct = Math.max(state.minLimit, state.pct - Math.floor(Math.random() * 2));
+    if (state.pct <= state.minLimit) {
+      state.charging = true;
+      logEvent('warn', `Battery at minimum (${state.minLimit}%) — charging resumed`);
+    }
+  }
+
+  // Fluctuate temp
+  state.temp = Math.round(36 + Math.random() * 8 + (state.charging ? 4 : 0));
+  if (state.temp > 50) {
+    logEvent('danger', `High battery temperature: ${state.temp}°C — please check ventilation`);
+    document.getElementById('throttleVal').textContent = 'Thermal';
+    document.getElementById('throttleVal').className = 'stat-value tag tag-warn';
+  } else {
+    document.getElementById('throttleVal').textContent = 'None';
+    document.getElementById('throttleVal').className = 'stat-value tag tag-green';
+  }
+
+  // Update history every few ticks
+  if (tickCount % 3 === 0) {
+    state.history.push(state.pct);
+    if (state.history.length > 30) state.history.shift();
+    renderChart();
+  }
+
+  if (tickCount % 6 === 0) {
+    logEvent('info', `Status check — ${state.pct}% · ${state.temp}°C · ${state.charging ? 'Charging' : 'Discharging'}`);
+  }
+
+  updateBatteryVisual();
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
