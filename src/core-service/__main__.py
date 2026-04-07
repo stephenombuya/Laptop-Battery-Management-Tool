@@ -1,45 +1,79 @@
+"""
+Entry point — allows the package to be run as:
+    python -m core_service [options]
+"""
+
+import argparse
 import sys
-import platform
-from core import BatteryMonitor
-from gui import BatteryManagerGUI
 
-def get_platform_specific_components():
-    system = platform.system().lower()
-    if system == 'windows':
-        from platforms.windows import WindowsChargingController, WindowsNotificationManager
-        return WindowsChargingController, WindowsNotificationManager
-    elif system == 'linux':
-        from platforms.linux import LinuxChargingController, LinuxNotificationManager
-        return LinuxChargingController, LinuxNotificationManager
-    elif system == 'darwin':
-        from platforms.macos import MacOSChargingController, MacOSNotificationManager
-        return MacOSChargingController, MacOSNotificationManager
-    else:
-        raise NotImplementedError(f"Platform {system} not supported")
+from .core import BatteryManager
+from .utils import get_logger
 
-def main():
-    try:
-        # Initialize core components
-        monitor = BatteryMonitor()
-        
-        # Get platform-specific implementations
-        ChargingController, NotificationManager = get_platform_specific_components()
-        
-        # Initialize controllers
-        charging_controller = ChargingController(max_charge=80, min_charge=20)
-        notification_manager = NotificationManager()
-        
-        # Attach observers
-        monitor.attach_observer(charging_controller)
-        monitor.attach_observer(notification_manager)
-        
-        # Initialize and run GUI
-        gui = BatteryManagerGUI(monitor)
-        gui.run()
-        
-    except Exception as e:
-        print(f"Error starting Battery Manager: {e}")
+logger = get_logger(__name__)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="batteryos",
+        description="BatteryOS — Intelligent Laptop Battery Manager",
+    )
+    parser.add_argument(
+        "--max", type=int, default=80, metavar="PCT",
+        help="Maximum charge threshold in percent (default: 80)",
+    )
+    parser.add_argument(
+        "--min", type=int, default=20, metavar="PCT",
+        help="Minimum charge threshold in percent (default: 20)",
+    )
+    parser.add_argument(
+        "--interval", type=int, default=300, metavar="SEC",
+        help="Battery check interval in seconds (default: 300)",
+    )
+    parser.add_argument(
+        "--no-gui", action="store_true",
+        help="Run as a headless background service (no GUI)",
+    )
+    parser.add_argument(
+        "--smart-plug", action="store_true",
+        help="Enable IoT smart-plug integration for physical power cutoff",
+    )
+    parser.add_argument(
+        "--log-level", default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging verbosity (default: INFO)",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    # Validate threshold range
+    if not (0 <= args.min < args.max <= 100):
+        logger.error(
+            "Invalid thresholds: min=%d, max=%d. "
+            "Ensure 0 ≤ min < max ≤ 100.",
+            args.min, args.max,
+        )
         sys.exit(1)
+
+    manager = BatteryManager(
+        max_charge_limit=args.max,
+        min_charge_limit=args.min,
+        check_interval=args.interval,
+        smart_plug_enabled=args.smart_plug,
+        log_level=args.log_level,
+    )
+
+    if args.no_gui:
+        logger.info("Starting BatteryOS in headless mode.")
+        manager.run()
+    else:
+        # Lazy-import GUI so headless environments never load tkinter
+        from .gui import BatteryGUI
+        gui = BatteryGUI(manager)
+        gui.start()
+
 
 if __name__ == "__main__":
     main()
