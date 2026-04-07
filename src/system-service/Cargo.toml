@@ -1,10 +1,47 @@
 [package]
-name = "battery-service"
-version = "0.1.0"
-edition = "2021"
+name        = "batteryos-service"
+version     = "2.0.0"
+edition     = "2021"
+description = "BatteryOS — high-performance background battery monitoring service"
+authors     = ["Stephen Ombuya"]
+license     = "MIT"
+repository  = "https://github.com/stephenombuya/Laptop-Battery-Management-Tool"
+keywords    = ["battery", "power", "monitor", "laptop", "cross-platform"]
+
+[[bin]]
+name = "batteryos-service"
+path = "src/main.rs"
 
 [dependencies]
-battery = "0.7"
-tokio = { version = "1.0", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# Serialisation — snapshot objects are sent as JSON over stdout / Unix socket
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = "1.0"
+
+# Async runtime — lightweight single-threaded loop is sufficient
+tokio       = { version = "1", features = ["rt", "time", "signal", "io-std"] }
+
+# Structured logging
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Platform-specific battery access
+[target.'cfg(target_os = "linux")'.dependencies]
+# sysfs reading is done with std::fs — no extra crate needed
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.52", features = [
+  "Win32_System_Power",
+  "Win32_Foundation",
+] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros", "test-util"] }
+
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
+strip         = true    # strip debug symbols for a lean binary
