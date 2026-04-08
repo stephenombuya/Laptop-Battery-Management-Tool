@@ -1,8 +1,7 @@
 # 🔋 BatteryOS — Intelligent Laptop Battery Manager
 
-A production-grade, cross-platform real-time battery management system designed to monitor laptop battery health, enforce intelligent charge thresholds, and
-extend battery longevity through proactive charge control and real-time
-notifications.
+A production-grade, cross-platform battery management system designed to monitor laptop battery health, enforce intelligent charge thresholds, and
+extend battery longevity through proactive charge control and real-time notifications.
 
 [![Battery Status](https://img.shields.io/badge/Battery-Protected-green)](https://github.com/stephenombuya/Laptop-Battery-Management-Tool)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
