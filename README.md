@@ -1,4 +1,4 @@
-# 🔋 BatteryOS — Intelligent Laptop Battery Manager
+#  Laptop Battery Management Tool
 
 A production-grade, cross-platform battery management system designed to monitor laptop battery health, enforce intelligent charge thresholds, and
 extend battery longevity through proactive charge control and real-time notifications.
@@ -11,7 +11,17 @@ extend battery longevity through proactive charge control and real-time notifica
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)]()
 
----
+<div>
+
+  <!-- Repository Analytics -->
+![GitHub repo size](https://img.shields.io/github/repo-size/stephenombuya/Laptop-Battery-Management-Tool)
+![GitHub language count](https://img.shields.io/github/languages/count/stephenombuya/Laptop-Battery-Management-Tool)
+![GitHub top language](https://img.shields.io/github/languages/top/stephenombuya/Laptop-Battery-Management-Tool)
+![GitHub last commit](https://img.shields.io/github/last-commit/stephenombuya/Laptop-Battery-Management-Tool)
+![GitHub contributors](https://img.shields.io/github/contributors/stephenombuya/Laptop-Battery-Management-Tool)
+
+</div>
+
 
 ## Table of Contents
 
@@ -33,7 +43,7 @@ extend battery longevity through proactive charge control and real-time notifica
 
 ---
 
-## ✨ Features
+##  Features
 
 - **Real-time battery monitoring** — live percentage, voltage, temperature, health, power draw, and time remaining
 - **Intelligent charge limiting** — automatically stops and resumes charging at configurable thresholds
@@ -49,7 +59,7 @@ extend battery longevity through proactive charge control and real-time notifica
 
 ---
 
-## 🏗 Architecture Overview
+##  Architecture Overview
 
 BatteryOS uses a layered multi-process architecture:
 
@@ -79,7 +89,7 @@ diagram, data-flow chart, and component responsibility matrix.
 
 ---
 
-## 💻 Technology Stack
+##  Technology Stack
 
 ### Electron Desktop App (`src/desktop-app/`)
 
@@ -124,7 +134,7 @@ diagram, data-flow chart, and component responsibility matrix.
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 src/
@@ -175,7 +185,7 @@ src/
 
 ---
 
-## 📋 Prerequisites
+##  Prerequisites
 
 ### All platforms
 - [Node.js](https://nodejs.org/) 20+ (Electron app)
@@ -204,7 +214,7 @@ src/
 
 ---
 
-## ⚡ Installation
+##  Installation
 
 ### 1. Clone
 
@@ -247,7 +257,7 @@ cargo build --release
 
 ---
 
-## 🚀 Usage
+##  Usage
 
 ### Electron app (recommended)
 
@@ -313,7 +323,7 @@ print(f"{snap.percent}% — {snap.time_left_human}")
 
 ---
 
-## ⚙️ Configuration
+##  Configuration
 
 | Parameter | CLI flag | Default | Description |
 |---|---|---|---|
@@ -326,7 +336,7 @@ print(f"{snap.percent}% — {snap.time_left_human}")
 
 ---
 
-## 🔧 Platform-Specific Notes
+##  Platform-Specific Notes
 
 ### Linux
 
@@ -383,7 +393,7 @@ WindowsPlatform().generate_battery_report("battery_report.html")
 
 ---
 
-## 🔋 Charging Modes
+##  Charging Modes
 
 | Mode | Max % | Min % | Best for |
 |---|---|---|---|
@@ -394,7 +404,7 @@ WindowsPlatform().generate_battery_report("battery_report.html")
 
 ---
 
-## 🌐 IoT Smart Plug Integration
+##  IoT Smart Plug Integration
 
 For hardware without native charge-stop support, BatteryOS can physically cut power via a smart plug.
 
@@ -409,7 +419,7 @@ python -m core_service --smart-plug --no-gui
 
 ---
 
-## 📝 Logging
+##  Logging
 
 Logs rotate at 5 MB × 3 backups in `~/.batteryos/logs/battery_manager.log`:
 
@@ -423,7 +433,7 @@ Set verbosity: `python -m core_service --log-level DEBUG`
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 **Battery not detected**
 - Linux: `ls /sys/class/power_supply/` — confirm `BAT0` or `BAT1` exists
@@ -454,7 +464,7 @@ cmake --build . && sudo cmake --install .
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a branch: `git checkout -b feature/amazing-feature`
@@ -469,6 +479,6 @@ cmake --build . && sudo cmake --install .
 
 ---
 
-## 📄 License
+##  License
 
 Licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
